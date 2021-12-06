@@ -10,6 +10,22 @@ SCRIPT_NAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
 
 cd $SCRIPT_PATH; if [[ ! -d "$SCRIPT_PATH/tmp" ]]; then mkdir $SCRIPT_PATH/tmp; fi
 
+function setup_postgres() {
+    set -e
+    psql postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='gvm'" | grep -q 1 \
+        || createuser -DRS gvm
+    psql -lqt | cut -d '|' -f 1 | grep -qw gvmd \
+        || createdb -O gvm gvmd
+    psql gvmd -c 'create role dba with superuser noinherit;' \
+        2>&1 | grep -e 'already exists' -e 'CREATE ROLE'
+    psql gvmd -c 'grant dba to gvm;'
+    psql gvmd -c 'create extension "uuid-ossp";' \
+        2>&1 | grep -e 'already exists' -e 'CREATE EXTENSION'
+    psql gvmd -c 'create extension "pgcrypto";' \
+        2>&1 | grep -e 'already exists' -e 'CREATE EXTENSION'
+}
+
+
 # Install depieces
 sudo apt-get update && \
 sudo apt-get -y upgrade && \
@@ -30,7 +46,7 @@ sudo npm install -g yarn
 
 # Add user
 sudo useradd -r -M -U -G sudo -s /usr/sbin/nologin gvm && \
-sudo usermod -aG gvm $USER && su $USER
+sudo usermod -aG gvm $USER # && su $USER
 
 # Initial dirs
 export PATH=$PATH:/usr/local/sbin && export INSTALL_PREFIX=/usr/local && \
@@ -54,3 +70,278 @@ curl -f -L https://github.com/greenbone/gvm-libs/archive/refs/tags/v$GVM_LIBS_VE
 curl -f -L https://github.com/greenbone/gvm-libs/releases/download/v$GVM_LIBS_VERSION/gvm-libs-$GVM_LIBS_VERSION.tar.gz.asc -o $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz.asc && \
 gpg --verify $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz.asc $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz
 
+# Install GVM libraries
+tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz && \
+mkdir -p $BUILD_DIR/gvm-libs && cd $BUILD_DIR/gvm-libs && \
+cmake $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION \
+  -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DSYSCONFDIR=/etc \
+  -DLOCALSTATEDIR=/var \
+  -DGVM_PID_DIR=/run/gvm && \
+make DESTDIR=$INSTALL_DIR install && \
+sudo cp -rv $INSTALL_DIR/* / && \
+rm -rf $INSTALL_DIR/*
+
+# Build GVM
+export GVMD_VERSION=21.4.4 && \
+curl -f -L https://github.com/greenbone/gvmd/archive/refs/tags/v$GVMD_VERSION.tar.gz -o $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz && \
+curl -f -L https://github.com/greenbone/gvmd/releases/download/v$GVMD_VERSION/gvmd-$GVMD_VERSION.tar.gz.asc -o $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz.asc && \
+gpg --verify $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz.asc $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz
+
+tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz && \
+mkdir -p $BUILD_DIR/gvmd && cd $BUILD_DIR/gvmd && \
+cmake $SOURCE_DIR/gvmd-$GVMD_VERSION \
+  -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DLOCALSTATEDIR=/var \
+  -DSYSCONFDIR=/etc \
+  -DGVM_DATA_DIR=/var \
+  -DGVM_RUN_DIR=/run/gvm \
+  -DOPENVAS_DEFAULT_SOCKET=/run/ospd/ospd-openvas.sock \
+  -DGVM_FEED_LOCK_PATH=/var/lib/gvm/feed-update.lock \
+  -DSYSTEMD_SERVICE_DIR=/lib/systemd/system \
+  -DDEFAULT_CONFIG_DIR=/etc/default \
+  -DLOGROTATE_DIR=/etc/logrotate.d && \
+make DESTDIR=$INSTALL_DIR install && \
+sudo cp -rv $INSTALL_DIR/* / && \
+rm -rf $INSTALL_DIR/*
+
+# GSA
+export GSA_VERSION=21.4.3 && \
+curl -f -L https://github.com/greenbone/gsa/archive/refs/tags/v$GSA_VERSION.tar.gz -o $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz && \
+curl -f -L https://github.com/greenbone/gsa/releases/download/v$GSA_VERSION/gsa-$GSA_VERSION.tar.gz.asc -o $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz.asc && \
+gpg --verify $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz.asc $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz
+
+tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz && \
+mkdir -p $BUILD_DIR/gsa && cd $BUILD_DIR/gsa && \
+cmake $SOURCE_DIR/gsa-$GSA_VERSION \
+  -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DSYSCONFDIR=/etc \
+  -DLOCALSTATEDIR=/var \
+  -DGVM_RUN_DIR=/run/gvm \
+  -DGSAD_PID_DIR=/run/gvm \
+  -DLOGROTATE_DIR=/etc/logrotate.d && \
+make DESTDIR=$INSTALL_DIR install && \
+sudo cp -rv $INSTALL_DIR/* / && \
+rm -rf $INSTALL_DIR/*
+
+# Samba Module
+export OPENVAS_SMB_VERSION=21.4.0 && \
+curl -f -L https://github.com/greenbone/openvas-smb/archive/refs/tags/v$OPENVAS_SMB_VERSION.tar.gz -o $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz && \
+curl -f -L https://github.com/greenbone/openvas-smb/releases/download/v$OPENVAS_SMB_VERSION/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz.asc -o $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz.asc && \
+gpg --verify $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz.asc $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz
+
+tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz && \
+mkdir -p $BUILD_DIR/openvas-smb && cd $BUILD_DIR/openvas-smb && \
+cmake $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION \
+  -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
+  -DCMAKE_BUILD_TYPE=Release && \
+make DESTDIR=$INSTALL_DIR install && \
+sudo cp -rv $INSTALL_DIR/* / && \
+rm -rf $INSTALL_DIR/*
+
+# Scanner
+export OPENVAS_SCANNER_VERSION=21.4.3 && \
+curl -f -L https://github.com/greenbone/openvas-scanner/archive/refs/tags/v$OPENVAS_SCANNER_VERSION.tar.gz -o $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz && \
+curl -f -L https://github.com/greenbone/openvas-scanner/releases/download/v$OPENVAS_SCANNER_VERSION/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz.asc -o $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz.asc && \
+gpg --verify $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz.asc $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz
+
+tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz && \
+mkdir -p $BUILD_DIR/openvas-scanner && cd $BUILD_DIR/openvas-scanner && \
+cmake $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION \
+  -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DSYSCONFDIR=/etc \
+  -DLOCALSTATEDIR=/var \
+  -DOPENVAS_FEED_LOCK_PATH=/var/lib/openvas/feed-update.lock \
+  -DOPENVAS_RUN_DIR=/run/ospd && \
+make DESTDIR=$INSTALL_DIR install && \
+sudo cp -rv $INSTALL_DIR/* / && \
+rm -rf $INSTALL_DIR/*
+
+# OSPD
+export OSPD_VERSION=21.4.4 && export OSPD_OPENVAS_VERSION=21.4.3 && \
+curl -f -L https://github.com/greenbone/ospd/archive/refs/tags/v$OSPD_VERSION.tar.gz -o $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
+curl -f -L https://github.com/greenbone/ospd/releases/download/v$OSPD_VERSION/ospd-$OSPD_VERSION.tar.gz.asc -o $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz.asc && \
+curl -f -L https://github.com/greenbone/ospd-openvas/archive/refs/tags/v$OSPD_OPENVAS_VERSION.tar.gz -o $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz && \
+curl -f -L https://github.com/greenbone/ospd-openvas/releases/download/v$OSPD_OPENVAS_VERSION/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc -o $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc && \
+gpg --verify $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz.asc $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
+gpg --verify $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz
+
+tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
+tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz && \
+cd $SOURCE_DIR/ospd-$OSPD_VERSION && \
+python3 -m pip install . --prefix=$INSTALL_PREFIX --root=$INSTALL_DIR
+
+pip install --upgrade psutil==5.5.1 && \
+cd $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION && \
+python3 -m pip install . --prefix=$INSTALL_PREFIX --root=$INSTALL_DIR --no-warn-script-location && \
+python3 -m pip install --user gvm-tools && \
+sudo cp -rv $INSTALL_DIR/* / && \
+rm -rf $INSTALL_DIR/*
+
+
+# Redis
+sudo cp $SOURCE_DIR/openvas-scanner-21.4.3/config/redis-openvas.conf /etc/redis/ && \
+sudo chown redis:redis /etc/redis/redis-openvas.conf && \
+echo "db_address = /run/redis-openvas/redis.sock" | sudo tee -a /etc/openvas/openvas.conf
+
+sudo systemctl start redis-server@openvas.service && \
+sudo systemctl enable redis-server@openvas.service
+
+sudo usermod -aG redis gvm && \
+sudo chown -R gvm:gvm /var/lib/gvm && \
+sudo chown -R gvm:gvm /var/lib/openvas && \
+sudo chown -R gvm:gvm /var/log/gvm && \
+sudo chown -R gvm:gvm /run/gvm && \
+sudo chmod -R g+srw /var/lib/gvm && \
+sudo chmod -R g+srw /var/lib/openvas && \
+sudo chmod -R g+srw /var/log/gvm && \
+sudo chown gvm:gvm /usr/local/sbin/gvmd && \
+sudo chmod 6750 /usr/local/sbin/gvmd
+
+# Sync
+sudo chown gvm:gvm /usr/local/bin/greenbone-nvt-sync && \
+sudo chmod 740 /usr/local/sbin/greenbone-feed-sync && \
+sudo chown gvm:gvm /usr/local/sbin/greenbone-*-sync && \
+sudo chmod 740 /usr/local/sbin/greenbone-*-sync
+
+# gvm sudoers
+echo "%gvm ALL = NOPASSWD: /usr/local/sbin/openvas" >> /etc/sudoers
+
+# PostgreSQL
+systemctl start postgresql@12-main.service
+
+sudo -Hiu postgres createuser gvm
+sudo -Hiu postgres createdb -O gvm gvmd
+sudo -Hiu postgres psql -c 'create role dba with superuser noinherit;' gvmd
+sudo -Hiu postgres psql -c 'grant dba to gvm;' gvmd
+sudo -Hiu postgres psql -c 'create extension "uuid-ossp";' gvmd
+sudo -Hiu postgres psql -c 'create extension "pgcrypto";' gvmd
+systemctl restart postgresql@12-main.service
+systemctl enable postgresql@12-main.service
+
+# !!!!!!
+
+# GVM admin creation
+sudo ldconfig
+sudo /usr/local/sbin/gvmd --create-user=admin --password=admin
+sudo gvmd --get-users --verbose
+# admin 9792da0c-c48c-4ac2-a10b-65834aaa4a33
+
+
+sudo gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value 9792da0c-c48c-4ac2-a10b-65834aaa4a33
+
+# Update NVT (network vuln tests)
+sudo -u gvm greenbone-nvt-sync
+
+sudo -u gvm greenbone-feed-sync --type GVMD_DATA
+sudo -u gvm greenbone-feed-sync --type SCAP
+sudo -u gvm greenbone-feed-sync --type CERT
+
+# Gen certs
+sudo -u gvm gvm-manage-certs -a
+
+# Gen systemd units
+
+cat << EOF > $BUILD_DIR/gvmd.service
+[Unit]
+Description=Greenbone Vulnerability Manager daemon (gvmd)
+After=network.target networking.service postgresql.service ospd-openvas.service
+Wants=postgresql.service ospd-openvas.service
+Documentation=man:gvmd(8)
+ConditionKernelCommandLine=!recovery
+
+[Service]
+Type=forking
+User=gvm
+Group=gvm
+PIDFile=/run/gvm/gvmd.pid
+RuntimeDirectory=gvm
+RuntimeDirectoryMode=2775
+ExecStart=/usr/local/sbin/gvmd --osp-vt-update=/run/ospd/ospd-openvas.sock --listen-group=gvm
+Restart=always
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo cp $BUILD_DIR/gvmd.service /etc/systemd/system/
+
+cat << EOF > $BUILD_DIR/gsad.service
+[Unit]
+Description=Greenbone Security Assistant daemon (gsad)
+Documentation=man:gsad(8) https://www.greenbone.net
+After=network.target gvmd.service
+Wants=gvmd.service
+
+[Service]
+Type=forking
+User=gvm
+Group=gvm
+PIDFile=/run/gvm/gsad.pid
+ExecStart=/usr/local/sbin/gsad --listen=192.168.0.1 --port=9392
+Restart=always
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
+Alias=greenbone-security-assistant.service
+EOF
+
+sudo cp $BUILD_DIR/gsad.service /etc/systemd/system/
+
+cat << EOF > $BUILD_DIR/ospd-openvas.service
+[Unit]
+Description=OSPd Wrapper for the OpenVAS Scanner (ospd-openvas)
+Documentation=man:ospd-openvas(8) man:openvas(8)
+After=network.target networking.service redis-server@openvas.service
+Wants=redis-server@openvas.service
+ConditionKernelCommandLine=!recovery
+
+[Service]
+Type=forking
+User=gvm
+Group=gvm
+RuntimeDirectory=ospd
+RuntimeDirectoryMode=2775
+PIDFile=/run/ospd/ospd-openvas.pid
+ExecStart=/usr/local/bin/ospd-openvas --unix-socket /run/ospd/ospd-openvas.sock --pid-file /run/ospd/ospd-openvas.pid --log-file /var/log/gvm/ospd-openvas.log --lock-file-dir /var/lib/openvas --socket-mode 0o770
+SuccessExitStatus=SIGKILL
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo cp $BUILD_DIR/ospd-openvas.service /etc/systemd/system/
+
+sudo systemctl daemon-reload
+
+sudo systemctl enable ospd-openvas
+sudo systemctl enable gvmd
+sudo systemctl enable gsad
+
+sudo systemctl start ospd-openvas
+sudo systemctl start gvmd
+sudo systemctl start gsad
+
+
+#
+
+
+
+#
+
+
+
+#
+
+
+
+
+#
