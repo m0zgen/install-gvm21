@@ -238,11 +238,13 @@ systemctl enable postgresql@12-main.service
 # -------------------------------------------------------------------------------------------\
 sudo ldconfig
 sudo /usr/local/sbin/gvmd --create-user=admin --password=admin
-sudo gvmd --get-users --verbose
+
+# Feed import fixing
+_gvmduid=`sudo gvmd --get-users --verbose | awk '{print $2}'`
 # admin 9792da0c-c48c-4ac2-a10b-65834aaa4a33
 
 
-sudo gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value 9792da0c-c48c-4ac2-a10b-65834aaa4a33
+sudo gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value $_gvmduid
 
 # Update NVT (network vuln tests)
 # -------------------------------------------------------------------------------------------\
@@ -348,6 +350,7 @@ if netstat -tulpn | grep 9392;then
 
     _listen=`netstat -tulpn | grep 9392 | awk '{print $4}'`
     echo "You can login in to GVM panel from address: http://$_listen"
+    echo "With credentials: admin / admin"
     exit 1
 
 else
@@ -355,6 +358,7 @@ else
     echo -e "GVM still starting.
     You can check GVM log - /var/log/gvm/gvmd.log
     You can check port 9392 on listen status.
+    User credentials: admin / admin
     Exit
     "
     exit 1
