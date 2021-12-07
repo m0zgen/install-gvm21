@@ -10,6 +10,7 @@
 
 # Sys env / paths / etc
 # -------------------------------------------------------------------------------------------\
+
 PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 SCRIPT_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
 SCRIPT_NAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
@@ -17,10 +18,12 @@ cd $SCRIPT_PATH; if [[ ! -d "$SCRIPT_PATH/tmp" ]]; then mkdir $SCRIPT_PATH/tmp; 
 
 # Variables
 # -------------------------------------------------------------------------------------------\
+
 SERVER_IP=$(hostname -I | cut -d' ' -f1)
 
 # Functions
 # -------------------------------------------------------------------------------------------\
+
 function enable_sd() {
     echo "Starting: $1 ..."
     sudo systemctl enable $1
@@ -28,8 +31,14 @@ function enable_sd() {
     sleep 10
 }
 
+function sync_data() {
+    sudo -u gvm greenbone-feed-sync --type $1
+    sleep 5
+}
+
 # Install depieces
 # -------------------------------------------------------------------------------------------\
+
 sudo apt-get update && \
 sudo apt-get -y upgrade && \
 sudo apt-get install -y build-essential && \
@@ -46,15 +55,18 @@ xmlstarlet texlive-fonts-recommended texlive-latex-extra perl-base expect
 
 # Install yarn
 # -------------------------------------------------------------------------------------------\
+
 sudo npm install -g yarn
 
 # Add user
 # -------------------------------------------------------------------------------------------\
+
 sudo useradd -r -M -U -G sudo -s /usr/sbin/nologin gvm && \
 sudo usermod -aG gvm $USER # && su $USER
 
 # Initial dirs
 # -------------------------------------------------------------------------------------------\
+
 export PATH=$PATH:/usr/local/sbin && export INSTALL_PREFIX=/usr/local && \
 export SOURCE_DIR=$HOME/source && mkdir -p $SOURCE_DIR && \
 export BUILD_DIR=$HOME/build && mkdir -p $BUILD_DIR && \
@@ -62,15 +74,16 @@ export INSTALL_DIR=$HOME/install && mkdir -p $INSTALL_DIR
 
 # Import GVM key and set to trust
 # -------------------------------------------------------------------------------------------\
+
 curl -O https://www.greenbone.net/GBCommunitySigningKey.asc && \
 gpg --import GBCommunitySigningKey.asc
 
 # Set Greenbone key to trust
 ./gpg-trust.exp 9823FAA60ED1E580
 
-
 # Build libraries
 # -------------------------------------------------------------------------------------------\
+
 export GVM_VERSION=21.4.4 && \
 export GVM_LIBS_VERSION=21.4.3
 
@@ -212,6 +225,7 @@ sudo chmod 6750 /usr/local/sbin/gvmd
 
 # Sync
 # -------------------------------------------------------------------------------------------\
+
 sudo chown gvm:gvm /usr/local/bin/greenbone-nvt-sync && \
 sudo chmod 740 /usr/local/sbin/greenbone-feed-sync && \
 sudo chown gvm:gvm /usr/local/sbin/greenbone-*-sync && \
@@ -219,10 +233,12 @@ sudo chmod 740 /usr/local/sbin/greenbone-*-sync
 
 # Allow GVM user use OpenVAS
 # -------------------------------------------------------------------------------------------\
+
 echo "%gvm ALL = NOPASSWD: /usr/local/sbin/openvas" >> /etc/sudoers
 
 # PostgreSQL
 # -------------------------------------------------------------------------------------------\
+
 systemctl start postgresql@12-main.service
 
 sudo -Hiu postgres createuser gvm
@@ -236,6 +252,7 @@ systemctl enable postgresql@12-main.service
 
 # GVM admin creation
 # -------------------------------------------------------------------------------------------\
+
 sudo ldconfig
 sudo /usr/local/sbin/gvmd --create-user=admin --password=admin
 
@@ -248,14 +265,9 @@ sudo gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value $_gvmdui
 
 # Update NVT (network vuln tests)
 # -------------------------------------------------------------------------------------------\
-sudo -u gvm greenbone-nvt-sync
-sleep 10
-sudo -u gvm greenbone-feed-sync --type GVMD_DATA
-sleep 3
-sudo -u gvm greenbone-feed-sync --type SCAP
-sleep 3
-sudo -u gvm greenbone-feed-sync --type CERT
-sleep 3
+
+sudo -u gvm greenbone-nvt-sync; sleep 10
+sync_data GVMD_DATA; sync_data SCAP; sync_data CERT
 
 # Gen certs
 # -------------------------------------------------------------------------------------------\
@@ -264,6 +276,7 @@ sudo -u gvm gvm-manage-certs -a
 
 # Gen systemd units
 # -------------------------------------------------------------------------------------------\
+
 cat << EOF > $BUILD_DIR/gvmd.service
 [Unit]
 Description=Greenbone Vulnerability Manager daemon (gvmd)
@@ -338,13 +351,19 @@ EOF
 
 sudo cp $BUILD_DIR/ospd-openvas.service /etc/systemd/system/
 
-sudo systemctl daemon-reload
+# Applying new units
+# -------------------------------------------------------------------------------------------\
 
+sudo systemctl daemon-reload
 enable_sd ospd-openvas; enable_sd gvmd; enable_sd gsad
 
+# Countdown
 echo "GSAD service can be long run... Please wait ~5-10 minutes"
 git clone https://github.com/m0zgen/countdown.git
 ./countdown/countdown.sh -f 1 -c 300
+
+# Final checking
+# -------------------------------------------------------------------------------------------\
 
 if netstat -tulpn | grep 9392;then
 
