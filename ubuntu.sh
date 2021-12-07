@@ -325,8 +325,8 @@ Type=forking
 User=gvm
 Group=gvm
 PIDFile=/run/gvm/gsad.pid
-# ExecStart=/usr/local/sbin/gsad --listen=${SERVER_IP} --port=9392
-ExecStart=/usr/local/sbin/gsad --listen=0.0.0.0 --port=9392
+ExecStart=/usr/local/sbin/gsad --listen=${SERVER_IP} --port=9392
+# ExecStart=/usr/local/sbin/gsad --listen=0.0.0.0 --port=9392
 Restart=always
 TimeoutStopSec=10
 
@@ -377,7 +377,7 @@ git clone https://github.com/m0zgen/countdown.git
 # Final checking
 # -------------------------------------------------------------------------------------------\
 
-if netstat -tulpn | grep 9392;then
+if netstat -tulpn | grep 9392 &> /dev/null;then
 
     _listen=`netstat -tulpn | grep 9392 | awk '{print $4}'`
     echo "You can login in to GVM panel from address: http://$_listen"
