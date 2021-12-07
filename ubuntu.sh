@@ -325,7 +325,8 @@ Type=forking
 User=gvm
 Group=gvm
 PIDFile=/run/gvm/gsad.pid
-ExecStart=/usr/local/sbin/gsad --listen=${SERVER_IP} --port=9392
+# ExecStart=/usr/local/sbin/gsad --listen=${SERVER_IP} --port=9392
+ExecStart=/usr/local/sbin/gsad --listen=0.0.0.0 --port=9392
 Restart=always
 TimeoutStopSec=10
 
@@ -381,6 +382,9 @@ if netstat -tulpn | grep 9392;then
     _listen=`netstat -tulpn | grep 9392 | awk '{print $4}'`
     echo "You can login in to GVM panel from address: http://$_listen"
     echo "With credentials: admin / admin"
+    echo ""
+    echo "Note: Also you can change / bind server IP as listen address (current using 0.0.0.0)"
+    echo "In systemd unit file /etc/systemd/system/gsad.service"
     exit 1
 
 else
