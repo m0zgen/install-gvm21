@@ -258,9 +258,6 @@ sudo /usr/local/sbin/gvmd --create-user=admin --password=admin
 
 # Feed import fixing
 _gvmduid=`sudo gvmd --get-users --verbose | awk '{print $2}'`
-# admin 9792da0c-c48c-4ac2-a10b-65834aaa4a33
-
-
 sudo gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value $_gvmduid
 
 # Update NVT (network vuln tests)
@@ -268,6 +265,20 @@ sudo gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value $_gvmdui
 
 sudo -u gvm greenbone-nvt-sync; sleep 10
 sync_data GVMD_DATA; sync_data SCAP; sync_data CERT
+
+# Create update script
+cat << EOF > /etc/cron.daily/sync_gvm.sh
+#!/bin/bash
+# Creted by GVM installer https://github.com/m0zgen/install-gvm21
+
+function sync_data() {
+    sudo -u gvm greenbone-feed-sync --type $1
+    sleep 5
+}
+
+sudo -u gvm greenbone-nvt-sync; sleep 10
+sync_data GVMD_DATA; sync_data SCAP; sync_data CERT
+EOF
 
 # Gen certs
 # -------------------------------------------------------------------------------------------\
@@ -357,7 +368,7 @@ sudo cp $BUILD_DIR/ospd-openvas.service /etc/systemd/system/
 sudo systemctl daemon-reload
 enable_sd ospd-openvas; enable_sd gvmd; enable_sd gsad
 
-# Countdown
+# Countdown...
 echo "GSAD service can be long run... Please wait ~5-10 minutes"
 git clone https://github.com/m0zgen/countdown.git
 ./countdown/countdown.sh -f 1 -c 300
