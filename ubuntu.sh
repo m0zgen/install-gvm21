@@ -372,7 +372,7 @@ enable_sd ospd-openvas; enable_sd gvmd; enable_sd gsad
 # Countdown...
 echo "GSAD service can be long run... Please wait ~5-10 minutes"
 git clone https://github.com/m0zgen/countdown.git
-./countdown/countdown.sh -f 1 -c 300
+./countdown/countdown.sh -f 2 -c 300
 
 # Final checking
 # -------------------------------------------------------------------------------------------\
