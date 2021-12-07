@@ -383,7 +383,7 @@ if netstat -tulpn | grep 9392 &> /dev/null;then
     echo "You can login in to GVM panel from address: http://$_listen"
     echo "With credentials: admin / admin"
     echo ""
-    echo "Note: Also you can change / bind server IP as listen address (current using 0.0.0.0)"
+    echo "Note: Also you can change / bind server IP as listen address (currently using $SERVER_IP)"
     echo "In systemd unit file /etc/systemd/system/gsad.service"
     exit 1
 
