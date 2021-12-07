@@ -10,6 +10,8 @@ SCRIPT_NAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
 
 cd $SCRIPT_PATH; if [[ ! -d "$SCRIPT_PATH/tmp" ]]; then mkdir $SCRIPT_PATH/tmp; fi
 
+SERVER_IP=$(hostname -I | cut -d' ' -f1)
+
 function setup_postgres() {
     set -e
     psql postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='gvm'" | grep -q 1 \
@@ -186,7 +188,7 @@ rm -rf $INSTALL_DIR/*
 # Redis
 sudo cp $SOURCE_DIR/openvas-scanner-21.4.3/config/redis-openvas.conf /etc/redis/ && \
 sudo chown redis:redis /etc/redis/redis-openvas.conf && \
-echo "db_address = /run/redis-openvas/redis.sock" | sudo tee -a /etc/openvas/openvas.conf
+sudo echo "db_address = /run/redis-openvas/redis.sock" | sudo tee -a /etc/openvas/openvas.conf
 
 sudo systemctl start redis-server@openvas.service && \
 sudo systemctl enable redis-server@openvas.service
@@ -283,7 +285,7 @@ Type=forking
 User=gvm
 Group=gvm
 PIDFile=/run/gvm/gsad.pid
-ExecStart=/usr/local/sbin/gsad --listen=192.168.0.1 --port=9392
+ExecStart=/usr/local/sbin/gsad --listen=${SERVER_IP} --port=9392
 Restart=always
 TimeoutStopSec=10
 
@@ -329,6 +331,7 @@ sudo systemctl enable gsad
 sudo systemctl start ospd-openvas
 sudo systemctl start gvmd
 sudo systemctl start gsad
+# /var/log/gvm/gvmd.log
 
 
 #
