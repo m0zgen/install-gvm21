@@ -19,6 +19,7 @@ cd $SCRIPT_PATH; if [[ ! -d "$SCRIPT_PATH/tmp" ]]; then mkdir $SCRIPT_PATH/tmp; 
 # Variables
 # -------------------------------------------------------------------------------------------\
 
+INSTALL_VER=20
 SERVER_IP=$(hostname -I | cut -d' ' -f1)
 
 # Functions
@@ -84,56 +85,84 @@ gpg --import GBCommunitySigningKey.asc
 # Build libraries
 # -------------------------------------------------------------------------------------------\
 
-# Versions
-export GVM_VERSION=21.4.4 && \
-export GVMD_VERSION=21.4.4 && \
-export GVM_LIBS_VERSION=21.4.3 && \
-export GSA_VERSION=21.4.3 && \
-export OPENVAS_SMB_VERSION=21.4.0 && \
-export OPENVAS_SCANNER_VERSION=21.4.3 && \
-export OSPD_VERSION=21.4.4 && export OSPD_OPENVAS_VERSION=21.4.3
-
 # Downloads
 # -------------------------------------------------------------------------------------------\
 
-# GVM libraries
-curl -f -L https://github.com/greenbone/gvm-libs/archive/refs/tags/v$GVM_LIBS_VERSION.tar.gz -o $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz && \
-curl -f -L https://github.com/greenbone/gvm-libs/releases/download/v$GVM_LIBS_VERSION/gvm-libs-$GVM_LIBS_VERSION.tar.gz.asc -o $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz.asc && \
-gpg --verify $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz.asc $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz
+if [[ "$INSTALL_VER" = "20" ]]; then
+    echo "Will install GVM20"
 
-# GVM
-# export GVMD_VERSION=21.4.4 && \
-curl -f -L https://github.com/greenbone/gvmd/archive/refs/tags/v$GVMD_VERSION.tar.gz -o $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz && \
-curl -f -L https://github.com/greenbone/gvmd/releases/download/v$GVMD_VERSION/gvmd-$GVMD_VERSION.tar.gz.asc -o $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz.asc && \
-gpg --verify $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz.asc $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz
+    # Versions
+    export GVM_VERSION=20.8.1 && \
+    export GVMD_VERSION=20.8.1 && \
+    export GVM_LIBS_VERSION=20.8.1 && \
+    export GSA_VERSION=20.8.1 && \
+    export OPENVAS_SMB_VERSION=20.8.1 && \
+    export OPENVAS_SCANNER_VERSION=20.8.1 && \
+    export OSPD_VERSION=20.8.1 && export OSPD_OPENVAS_VERSION=20.8.1
 
-# GSA
-# export GSA_VERSION=21.4.3 && \
-curl -f -L https://github.com/greenbone/gsa/archive/refs/tags/v$GSA_VERSION.tar.gz -o $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz && \
-curl -f -L https://github.com/greenbone/gsa/releases/download/v$GSA_VERSION/gsa-$GSA_VERSION.tar.gz.asc -o $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz.asc && \
-gpg --verify $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz.asc $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz
+    git clone -b v20.8.1 https://github.com/greenbone/gvm-libs.git $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION
+    git clone https://github.com/greenbone/openvas-smb.git $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION
+    git clone -b v20.8.1 https://github.com/greenbone/openvas.git $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION
+    git clone -b v20.8.1 https://github.com/greenbone/ospd-openvas.git $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION
+    git clone -b v20.8.1 https://github.com/greenbone/ospd.git $SOURCE_DIR/ospd-$OSPD_VERSION
+    git clone -b v20.8.1 https://github.com/greenbone/gvmd.git $SOURCE_DIR/gvmd-$GVMD_VERSION
+    git clone -b v20.8.1 https://github.com/greenbone/gsa.git $SOURCE_DIR/gsa-$GSA_VERSION
+    git clone https://github.com/greenbone/python-gvm.git
+    git clone https://github.com/greenbone/gvm-tools.git
 
-# SMB
-# export OPENVAS_SMB_VERSION=21.4.0 && \
-curl -f -L https://github.com/greenbone/openvas-smb/archive/refs/tags/v$OPENVAS_SMB_VERSION.tar.gz -o $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz && \
-curl -f -L https://github.com/greenbone/openvas-smb/releases/download/v$OPENVAS_SMB_VERSION/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz.asc -o $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz.asc && \
-gpg --verify $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz.asc $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz
+else
+    echo "Will install GVM21"
 
-# Scanner
-# export OPENVAS_SCANNER_VERSION=21.4.3 && \
-curl -f -L https://github.com/greenbone/openvas-scanner/archive/refs/tags/v$OPENVAS_SCANNER_VERSION.tar.gz -o $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz && \
-curl -f -L https://github.com/greenbone/openvas-scanner/releases/download/v$OPENVAS_SCANNER_VERSION/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz.asc -o $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz.asc && \
-gpg --verify $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz.asc $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz
+    # Versions
+    export GVM_VERSION=21.4.4 && \
+    export GVMD_VERSION=21.4.4 && \
+    export GVM_LIBS_VERSION=21.4.3 && \
+    export GSA_VERSION=21.4.3 && \
+    export OPENVAS_SMB_VERSION=21.4.0 && \
+    export OPENVAS_SCANNER_VERSION=21.4.3 && \
+    export OSPD_VERSION=21.4.4 && export OSPD_OPENVAS_VERSION=21.4.3
 
-# OSPD
-# export OSPD_VERSION=21.4.4 && export OSPD_OPENVAS_VERSION=21.4.3 && \
-curl -f -L https://github.com/greenbone/ospd/archive/refs/tags/v$OSPD_VERSION.tar.gz -o $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
-curl -f -L https://github.com/greenbone/ospd/releases/download/v$OSPD_VERSION/ospd-$OSPD_VERSION.tar.gz.asc -o $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz.asc && \
-curl -f -L https://github.com/greenbone/ospd-openvas/archive/refs/tags/v$OSPD_OPENVAS_VERSION.tar.gz -o $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz && \
-curl -f -L https://github.com/greenbone/ospd-openvas/releases/download/v$OSPD_OPENVAS_VERSION/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc -o $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc && \
-gpg --verify $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz.asc $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
-gpg --verify $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz
+    # GVM libraries
+    curl -f -L https://github.com/greenbone/gvm-libs/archive/refs/tags/v$GVM_LIBS_VERSION.tar.gz -o $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz && \
+    curl -f -L https://github.com/greenbone/gvm-libs/releases/download/v$GVM_LIBS_VERSION/gvm-libs-$GVM_LIBS_VERSION.tar.gz.asc -o $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz.asc && \
+    gpg --verify $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz.asc $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz
 
+    # GVM
+    # export GVMD_VERSION=21.4.4 && \
+    curl -f -L https://github.com/greenbone/gvmd/archive/refs/tags/v$GVMD_VERSION.tar.gz -o $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz && \
+    curl -f -L https://github.com/greenbone/gvmd/releases/download/v$GVMD_VERSION/gvmd-$GVMD_VERSION.tar.gz.asc -o $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz.asc && \
+    gpg --verify $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz.asc $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz
+
+    # GSA
+    # export GSA_VERSION=21.4.3 && \
+    curl -f -L https://github.com/greenbone/gsa/archive/refs/tags/v$GSA_VERSION.tar.gz -o $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz && \
+    curl -f -L https://github.com/greenbone/gsa/releases/download/v$GSA_VERSION/gsa-$GSA_VERSION.tar.gz.asc -o $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz.asc && \
+    gpg --verify $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz.asc $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz
+
+    # SMB
+    # export OPENVAS_SMB_VERSION=21.4.0 && \
+    curl -f -L https://github.com/greenbone/openvas-smb/archive/refs/tags/v$OPENVAS_SMB_VERSION.tar.gz -o $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz && \
+    curl -f -L https://github.com/greenbone/openvas-smb/releases/download/v$OPENVAS_SMB_VERSION/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz.asc -o $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz.asc && \
+    gpg --verify $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz.asc $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz
+
+    # Scanner
+    # export OPENVAS_SCANNER_VERSION=21.4.3 && \
+    curl -f -L https://github.com/greenbone/openvas-scanner/archive/refs/tags/v$OPENVAS_SCANNER_VERSION.tar.gz -o $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz && \
+    curl -f -L https://github.com/greenbone/openvas-scanner/releases/download/v$OPENVAS_SCANNER_VERSION/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz.asc -o $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz.asc && \
+    gpg --verify $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz.asc $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz
+
+    # OSPD
+    # export OSPD_VERSION=21.4.4 && export OSPD_OPENVAS_VERSION=21.4.3 && \
+    curl -f -L https://github.com/greenbone/ospd/archive/refs/tags/v$OSPD_VERSION.tar.gz -o $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
+    curl -f -L https://github.com/greenbone/ospd/releases/download/v$OSPD_VERSION/ospd-$OSPD_VERSION.tar.gz.asc -o $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz.asc && \
+    
+    curl -f -L https://github.com/greenbone/ospd-openvas/archive/refs/tags/v$OSPD_OPENVAS_VERSION.tar.gz -o $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz && \
+    curl -f -L https://github.com/greenbone/ospd-openvas/releases/download/v$OSPD_OPENVAS_VERSION/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc -o $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc && \
+    
+    gpg --verify $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz.asc $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
+    gpg --verify $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz
+
+fi
 
 # Build and install
 # -------------------------------------------------------------------------------------------\
