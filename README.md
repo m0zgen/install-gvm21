@@ -12,7 +12,7 @@ Script install GVM 21 from scratch:
 * Download NVT and others data
 
 # Create cron update script
-<TODO>
+*TODO
 
 # Usage
 
