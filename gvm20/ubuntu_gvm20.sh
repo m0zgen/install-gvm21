@@ -168,7 +168,10 @@ fi
 # -------------------------------------------------------------------------------------------\
 
 # Install GVM libraries
-tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz && \
+if [[ "$INSTALL_VER" = "21" ]]; then
+    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION.tar.gz
+fi
+
 mkdir -p $BUILD_DIR/gvm-libs && cd $BUILD_DIR/gvm-libs && \
 cmake $SOURCE_DIR/gvm-libs-$GVM_LIBS_VERSION \
   -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
@@ -181,7 +184,10 @@ sudo cp -rv $INSTALL_DIR/* / && \
 rm -rf $INSTALL_DIR/*
 
 # Install GVM
-tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz && \
+if [[ "$INSTALL_VER" = "21" ]]; then
+    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz && \
+fi
+
 mkdir -p $BUILD_DIR/gvmd && cd $BUILD_DIR/gvmd && \
 cmake $SOURCE_DIR/gvmd-$GVMD_VERSION \
   -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
@@ -200,7 +206,10 @@ sudo cp -rv $INSTALL_DIR/* / && \
 rm -rf $INSTALL_DIR/*
 
 # GSA
+if [[ "$INSTALL_VER" = "21" ]]; then
 tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz && \
+
+fi
 mkdir -p $BUILD_DIR/gsa && cd $BUILD_DIR/gsa && \
 cmake $SOURCE_DIR/gsa-$GSA_VERSION \
   -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
@@ -215,7 +224,10 @@ sudo cp -rv $INSTALL_DIR/* / && \
 rm -rf $INSTALL_DIR/*
 
 # Samba Module
-tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz && \
+if [[ "$INSTALL_VER" = "21" ]]; then
+    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz && \
+fi
+
 mkdir -p $BUILD_DIR/openvas-smb && cd $BUILD_DIR/openvas-smb && \
 cmake $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION \
   -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
@@ -225,7 +237,11 @@ sudo cp -rv $INSTALL_DIR/* / && \
 rm -rf $INSTALL_DIR/*
 
 # Scanner
+if [[ "$INSTALL_VER" = "21" ]]; then
 tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz && \
+
+fi
+
 mkdir -p $BUILD_DIR/openvas-scanner && cd $BUILD_DIR/openvas-scanner && \
 cmake $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION \
   -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
@@ -239,8 +255,11 @@ sudo cp -rv $INSTALL_DIR/* / && \
 rm -rf $INSTALL_DIR/*
 
 # OSPD
-tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
-tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz && \
+if [[ "$INSTALL_VER" = "21" ]]; then
+    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
+    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz && \
+fi
+
 cd $SOURCE_DIR/ospd-$OSPD_VERSION && \
 python3 -m pip install . --prefix=$INSTALL_PREFIX --root=$INSTALL_DIR
 
