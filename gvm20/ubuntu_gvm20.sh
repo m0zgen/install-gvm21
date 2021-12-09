@@ -185,7 +185,7 @@ rm -rf $INSTALL_DIR/*
 
 # Install GVM
 if [[ "$INSTALL_VER" = "21" ]]; then
-    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz && \
+    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gvmd-$GVMD_VERSION.tar.gz
 fi
 
 mkdir -p $BUILD_DIR/gvmd && cd $BUILD_DIR/gvmd && \
@@ -207,8 +207,7 @@ rm -rf $INSTALL_DIR/*
 
 # GSA
 if [[ "$INSTALL_VER" = "21" ]]; then
-tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz && \
-
+    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/gsa-$GSA_VERSION.tar.gz
 fi
 mkdir -p $BUILD_DIR/gsa && cd $BUILD_DIR/gsa && \
 cmake $SOURCE_DIR/gsa-$GSA_VERSION \
@@ -225,7 +224,7 @@ rm -rf $INSTALL_DIR/*
 
 # Samba Module
 if [[ "$INSTALL_VER" = "21" ]]; then
-    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz && \
+    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/openvas-smb-$OPENVAS_SMB_VERSION.tar.gz
 fi
 
 mkdir -p $BUILD_DIR/openvas-smb && cd $BUILD_DIR/openvas-smb && \
@@ -238,8 +237,7 @@ rm -rf $INSTALL_DIR/*
 
 # Scanner
 if [[ "$INSTALL_VER" = "21" ]]; then
-tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz && \
-
+    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION.tar.gz
 fi
 
 mkdir -p $BUILD_DIR/openvas-scanner && cd $BUILD_DIR/openvas-scanner && \
@@ -257,7 +255,7 @@ rm -rf $INSTALL_DIR/*
 # OSPD
 if [[ "$INSTALL_VER" = "21" ]]; then
     tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
-    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz && \
+    tar -C $SOURCE_DIR -xvzf $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz
 fi
 
 cd $SOURCE_DIR/ospd-$OSPD_VERSION && \
