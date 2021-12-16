@@ -58,6 +58,7 @@ xmlstarlet texlive-fonts-recommended texlive-latex-extra perl-base expect
 # -------------------------------------------------------------------------------------------\
 
 sudo npm install -g yarn
+sudo yarn upgrade
 
 # Add user
 # -------------------------------------------------------------------------------------------\
