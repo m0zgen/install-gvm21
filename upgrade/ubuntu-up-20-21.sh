@@ -21,6 +21,14 @@ cd $SCRIPT_PATH; if [[ ! -d "$SCRIPT_PATH/tmp" ]]; then mkdir $SCRIPT_PATH/tmp; 
 
 SERVER_IP=$(hostname -I | cut -d' ' -f1)
 
+# Initial dirs
+# -------------------------------------------------------------------------------------------\
+
+export PATH=$PATH:/usr/local/sbin && export INSTALL_PREFIX=/usr/local && \
+export SOURCE_DIR=$HOME/source && mkdir -p $SOURCE_DIR && \
+export BUILD_DIR=$HOME/build && mkdir -p $BUILD_DIR && \
+export INSTALL_DIR=$HOME/install && mkdir -p $INSTALL_DIR
+
 # Functions
 # -------------------------------------------------------------------------------------------\
 
@@ -42,7 +50,12 @@ function sync_data() {
     sleep 5
 }
 
-# Install depieces
+# Stop services
+# -------------------------------------------------------------------------------------------\
+stop_sd ospd-openvas; stop_sd gvmd; stop_sd gsad
+mv $BUILD_DIR ~/build_prev
+
+# Install depensens
 # -------------------------------------------------------------------------------------------\
 
 sudo apt-get update && \
@@ -69,14 +82,6 @@ xmlstarlet texlive-fonts-recommended texlive-latex-extra perl-base expect
 
 # sudo useradd -r -M -U -G sudo -s /usr/sbin/nologin gvm && \
 # sudo usermod -aG gvm $USER # && su $USER
-
-# Initial dirs
-# -------------------------------------------------------------------------------------------\
-
-export PATH=$PATH:/usr/local/sbin && export INSTALL_PREFIX=/usr/local && \
-export SOURCE_DIR=$HOME/source && mkdir -p $SOURCE_DIR && \
-export BUILD_DIR=$HOME/build && mkdir -p $BUILD_DIR && \
-export INSTALL_DIR=$HOME/install && mkdir -p $INSTALL_DIR
 
 # Import GVM key and set to trust
 # -------------------------------------------------------------------------------------------\
@@ -139,11 +144,6 @@ curl -f -L https://github.com/greenbone/ospd-openvas/archive/refs/tags/v$OSPD_OP
 curl -f -L https://github.com/greenbone/ospd-openvas/releases/download/v$OSPD_OPENVAS_VERSION/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc -o $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc && \
 gpg --verify $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz.asc $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
 gpg --verify $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz
-
-# Stop services
-# -------------------------------------------------------------------------------------------\
-stop_sd ospd-openvas; stop_sd gvmd; stop_sd gsad
-mv $BUILD_DIR $BUILD_DIR_20
 
 # Build and install
 # -------------------------------------------------------------------------------------------\
@@ -253,10 +253,10 @@ sudo chmod 6750 /usr/local/sbin/gvmd
 # Sync
 # -------------------------------------------------------------------------------------------\
 
-sudo chown gvm:gvm /usr/local/bin/greenbone-nvt-sync && \
-sudo chmod 740 /usr/local/sbin/greenbone-feed-sync && \
-sudo chown gvm:gvm /usr/local/sbin/greenbone-*-sync && \
-sudo chmod 740 /usr/local/sbin/greenbone-*-sync
+# sudo chown gvm:gvm /usr/local/bin/greenbone-nvt-sync && \
+# sudo chmod 740 /usr/local/sbin/greenbone-feed-sync && \
+# sudo chown gvm:gvm /usr/local/sbin/greenbone-*-sync && \
+# sudo chmod 740 /usr/local/sbin/greenbone-*-sync
 
 # Allow GVM user use OpenVAS
 # -------------------------------------------------------------------------------------------\
@@ -286,7 +286,7 @@ sudo ldconfig
 mkdir /run/gvm/
 touch /run/gvm/gvm-create-functions
 chmod 777 /run/gvm/gvm-create-functions
-systemctl start ospd-openvas
+# systemctl start ospd-openvas
 
 gvmd --migrate
 
@@ -304,10 +304,10 @@ gvmd --migrate
 # Update NVT (network vuln tests)
 # -------------------------------------------------------------------------------------------\
 
-sudo -u gvm greenbone-nvt-sync; sleep 10
-sudo -u gvm greenbone-feed-sync --type GVMD_DATA
-sudo -u gvm greenbone-feed-sync --type SCAP
-sudo -u gvm greenbone-feed-sync --type CERT
+# sudo -u gvm greenbone-nvt-sync; sleep 10
+# sudo -u gvm greenbone-feed-sync --type GVMD_DATA
+# sudo -u gvm greenbone-feed-sync --type SCAP
+# sudo -u gvm greenbone-feed-sync --type CERT
 
 # Create update script
 cat << EOF > /etc/cron.daily/sync_gvm.sh
