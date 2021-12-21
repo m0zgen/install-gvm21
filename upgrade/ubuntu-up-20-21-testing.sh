@@ -80,17 +80,17 @@ xmlstarlet texlive-fonts-recommended texlive-latex-extra perl-base expect
 # Add user
 # -------------------------------------------------------------------------------------------\
 
-# sudo useradd -r -M -U -G sudo -s /usr/sbin/nologin gvm && \
-# sudo usermod -aG gvm $USER # && su $USER
+sudo useradd -r -M -U -G sudo -s /usr/sbin/nologin gvm && \
+sudo usermod -aG gvm $USER # && su $USER
 
 # Import GVM key and set to trust
 # -------------------------------------------------------------------------------------------\
 
-# curl -O https://www.greenbone.net/GBCommunitySigningKey.asc && \
-# gpg --import GBCommunitySigningKey.asc
+curl -O https://www.greenbone.net/GBCommunitySigningKey.asc && \
+gpg --import GBCommunitySigningKey.asc
 
-# # Set Greenbone key to trust
-# ./gpg-trust.exp 9823FAA60ED1E580
+# Set Greenbone key to trust
+./gpg-trust.exp 9823FAA60ED1E580
 
 # Build libraries
 # -------------------------------------------------------------------------------------------\
