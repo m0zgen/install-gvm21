@@ -21,14 +21,6 @@ cd $SCRIPT_PATH; if [[ ! -d "$SCRIPT_PATH/tmp" ]]; then mkdir $SCRIPT_PATH/tmp; 
 
 SERVER_IP=$(hostname -I | cut -d' ' -f1)
 
-# Initial dirs
-# -------------------------------------------------------------------------------------------\
-
-export PATH=$PATH:/usr/local/sbin && export INSTALL_PREFIX=/usr/local && \
-export SOURCE_DIR=$HOME/source && mkdir -p $SOURCE_DIR && \
-export BUILD_DIR=$HOME/build && mkdir -p $BUILD_DIR && \
-export INSTALL_DIR=$HOME/install && mkdir -p $INSTALL_DIR
-
 # Functions
 # -------------------------------------------------------------------------------------------\
 
@@ -39,23 +31,12 @@ function enable_sd() {
     sleep 10
 }
 
-function stop_sd() {
-    echo "Stopping: $1 ..."
-    sudo systemctl stop $1
-    sleep 10
-}
-
 function sync_data() {
     sudo -u gvm greenbone-feed-sync --type $1
     sleep 5
 }
 
-# Stop services
-# -------------------------------------------------------------------------------------------\
-stop_sd ospd-openvas; stop_sd gvmd; stop_sd gsad
-mv $BUILD_DIR ~/build_prev
-
-# Install depensens
+# Install depieces
 # -------------------------------------------------------------------------------------------\
 
 sudo apt-get update && \
@@ -75,13 +56,21 @@ xmlstarlet texlive-fonts-recommended texlive-latex-extra perl-base expect
 # Install yarn
 # -------------------------------------------------------------------------------------------\
 
-# sudo npm install -g yarn
+sudo npm install -g yarn
 
 # Add user
 # -------------------------------------------------------------------------------------------\
 
 sudo useradd -r -M -U -G sudo -s /usr/sbin/nologin gvm && \
 sudo usermod -aG gvm $USER # && su $USER
+
+# Initial dirs
+# -------------------------------------------------------------------------------------------\
+
+export PATH=$PATH:/usr/local/sbin && export INSTALL_PREFIX=/usr/local && \
+export SOURCE_DIR=$HOME/source && mkdir -p $SOURCE_DIR && \
+export BUILD_DIR=$HOME/build && mkdir -p $BUILD_DIR && \
+export INSTALL_DIR=$HOME/install && mkdir -p $INSTALL_DIR
 
 # Import GVM key and set to trust
 # -------------------------------------------------------------------------------------------\
@@ -144,6 +133,7 @@ curl -f -L https://github.com/greenbone/ospd-openvas/archive/refs/tags/v$OSPD_OP
 curl -f -L https://github.com/greenbone/ospd-openvas/releases/download/v$OSPD_OPENVAS_VERSION/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc -o $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc && \
 gpg --verify $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz.asc $SOURCE_DIR/ospd-$OSPD_VERSION.tar.gz && \
 gpg --verify $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz.asc $SOURCE_DIR/ospd-openvas-$OSPD_OPENVAS_VERSION.tar.gz
+
 
 # Build and install
 # -------------------------------------------------------------------------------------------\
@@ -237,7 +227,8 @@ sudo cp $SOURCE_DIR/openvas-scanner-$OPENVAS_SCANNER_VERSION/config/redis-openva
 sudo chown redis:redis /etc/redis/redis-openvas.conf && \
 sudo echo "db_address = /run/redis-openvas/redis.sock" | sudo tee -a /etc/openvas/openvas.conf
 
-sudo systemctl restart redis-server@openvas.service
+sudo systemctl start redis-server@openvas.service && \
+sudo systemctl enable redis-server@openvas.service
 
 sudo usermod -aG redis gvm && \
 sudo chown -R gvm:gvm /var/lib/gvm && \
@@ -266,7 +257,7 @@ echo "%gvm ALL = NOPASSWD: /usr/local/sbin/openvas" >> /etc/sudoers
 # PostgreSQL
 # -------------------------------------------------------------------------------------------\
 
-# systemctl start postgresql@12-main.service
+systemctl start postgresql@12-main.service
 
 # sudo -Hiu postgres createuser gvm
 # sudo -Hiu postgres createdb -O gvm gvmd
@@ -280,57 +271,40 @@ echo "%gvm ALL = NOPASSWD: /usr/local/sbin/openvas" >> /etc/sudoers
 # GVM admin creation
 # -------------------------------------------------------------------------------------------\
 
-echo "/usr/local/lib/" > /etc/ld.so.conf.d/gvm.conf
 sudo ldconfig
-
-# Premigrate
-if [[ ! -d /run/gvm/ ]]; then
-  mkdir /run/gvm/
-fi
-
-touch /run/gvm/gvm-create-functions
-chmod 777 /run/gvm/gvm-create-functions
-# systemctl start ospd-openvas
-
-# Migrate DB
-echo -e "\nPlease wait 5-10 minutes (you can check update status in /var/log/gvm/gvmd.log)...\n"
-gvmd --migrate
-
-
 # sudo /usr/local/sbin/gvmd --create-user=admin --password=admin
 
 # Feed import fixing
 _gvmduid=`sudo gvmd --get-users --verbose | awk '{print $2}'`
 sudo gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value $_gvmduid
 
-
 # Update NVT (network vuln tests)
 # -------------------------------------------------------------------------------------------\
 
-# sudo -u gvm greenbone-nvt-sync; sleep 10
-# sudo -u gvm greenbone-feed-sync --type GVMD_DATA
-# sudo -u gvm greenbone-feed-sync --type SCAP
-# sudo -u gvm greenbone-feed-sync --type CERT
+sudo -u gvm greenbone-nvt-sync; sleep 10
+sync_data GVMD_DATA; sync_data SCAP; sync_data CERT
 
 # Create update script
 cat << EOF > /etc/cron.daily/sync_gvm.sh
 #!/bin/bash
 # Creted by GVM installer https://github.com/m0zgen/install-gvm21
 
-sudo -u gvm greenbone-nvt-sync; sleep 10
-sudo -u gvm greenbone-feed-sync --type GVMD_DATA
-sudo -u gvm greenbone-feed-sync --type SCAP
-sudo -u gvm greenbone-feed-sync --type CERT
+function sync_data() {
+    sudo -u gvm greenbone-feed-sync --type $1
+    sleep 5
+}
 
+sudo -u gvm greenbone-nvt-sync; sleep 10
+sync_data GVMD_DATA; sync_data SCAP; sync_data CERT
 EOF
 
-# # Gen certs
-# # -------------------------------------------------------------------------------------------\
+# Gen certs
+# -------------------------------------------------------------------------------------------\
 
 sudo -u gvm gvm-manage-certs -a
 
-# # Gen systemd units
-# # -------------------------------------------------------------------------------------------\
+# Gen systemd units
+# -------------------------------------------------------------------------------------------\
 
 cat << EOF > $BUILD_DIR/gvmd.service
 [Unit]
@@ -369,8 +343,8 @@ Type=forking
 User=gvm
 Group=gvm
 PIDFile=/run/gvm/gsad.pid
-ExecStart=/usr/local/sbin/gsad --listen=${SERVER_IP} --port=9392
-# ExecStart=/usr/local/sbin/gsad --listen=0.0.0.0 --port=9392
+# ExecStart=/usr/local/sbin/gsad --listen=${SERVER_IP} --port=9392
+ExecStart=/usr/local/sbin/gsad --listen=0.0.0.0 --port=9392
 Restart=always
 TimeoutStopSec=10
 
@@ -407,14 +381,11 @@ EOF
 
 sudo cp $BUILD_DIR/ospd-openvas.service /etc/systemd/system/
 
-# # Applying new units
-# # -------------------------------------------------------------------------------------------\
+# Applying new units
+# -------------------------------------------------------------------------------------------\
 
 sudo systemctl daemon-reload
-
 enable_sd ospd-openvas; enable_sd gvmd; enable_sd gsad
-
-# Refresh updates
 
 # Countdown...
 echo "GSAD service can be long run... Please wait ~5-10 minutes"
