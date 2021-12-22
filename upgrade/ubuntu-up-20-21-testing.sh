@@ -257,7 +257,7 @@ echo "%gvm ALL = NOPASSWD: /usr/local/sbin/openvas" >> /etc/sudoers
 # PostgreSQL
 # -------------------------------------------------------------------------------------------\
 
-systemctl start postgresql@12-main.service
+# systemctl start postgresql@12-main.service
 
 # sudo -Hiu postgres createuser gvm
 # sudo -Hiu postgres createdb -O gvm gvmd
@@ -306,30 +306,30 @@ sudo -u gvm gvm-manage-certs -a
 # Gen systemd units
 # -------------------------------------------------------------------------------------------\
 
-cat << EOF > $BUILD_DIR/gvmd.service
-[Unit]
-Description=Greenbone Vulnerability Manager daemon (gvmd)
-After=network.target networking.service postgresql.service ospd-openvas.service
-Wants=postgresql.service ospd-openvas.service
-Documentation=man:gvmd(8)
-ConditionKernelCommandLine=!recovery
+# cat << EOF > $BUILD_DIR/gvmd.service
+# [Unit]
+# Description=Greenbone Vulnerability Manager daemon (gvmd)
+# After=network.target networking.service postgresql.service ospd-openvas.service
+# Wants=postgresql.service ospd-openvas.service
+# Documentation=man:gvmd(8)
+# ConditionKernelCommandLine=!recovery
 
-[Service]
-Type=forking
-User=gvm
-Group=gvm
-PIDFile=/run/gvm/gvmd.pid
-RuntimeDirectory=gvm
-RuntimeDirectoryMode=2775
-ExecStart=/usr/local/sbin/gvmd --osp-vt-update=/run/ospd/ospd-openvas.sock --listen-group=gvm
-Restart=always
-TimeoutStopSec=10
+# [Service]
+# Type=forking
+# User=gvm
+# Group=gvm
+# PIDFile=/run/gvm/gvmd.pid
+# RuntimeDirectory=gvm
+# RuntimeDirectoryMode=2775
+# ExecStart=/usr/local/sbin/gvmd --osp-vt-update=/run/ospd/ospd-openvas.sock --listen-group=gvm
+# Restart=always
+# TimeoutStopSec=10
 
-[Install]
-WantedBy=multi-user.target
-EOF
+# [Install]
+# WantedBy=multi-user.target
+# EOF
 
-sudo cp $BUILD_DIR/gvmd.service /etc/systemd/system/
+# sudo cp $BUILD_DIR/gvmd.service /etc/systemd/system/
 
 cat << EOF > $BUILD_DIR/gsad.service
 [Unit]
