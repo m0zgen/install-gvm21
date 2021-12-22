@@ -31,6 +31,12 @@ function enable_sd() {
     sleep 10
 }
 
+function stop_sd() {
+    echo "Stopping: $1 ..."
+    sudo systemctl stop $1
+    sleep 10
+}
+
 function sync_data() {
     sudo -u gvm greenbone-feed-sync --type $1
     sleep 5
@@ -55,6 +61,7 @@ xmlstarlet texlive-fonts-recommended texlive-latex-extra perl-base expect
 
 # Install yarn
 # -------------------------------------------------------------------------------------------\
+stop_sd ospd-openvas; stop_sd gvmd; stop_sd gsad
 
 sudo npm install -g yarn
 
