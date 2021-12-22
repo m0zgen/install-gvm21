@@ -300,8 +300,8 @@ gvmd --migrate
 # sudo /usr/local/sbin/gvmd --create-user=admin --password=admin
 
 # Feed import fixing
-# _gvmduid=`sudo gvmd --get-users --verbose | awk '{print $2}'`
-# sudo gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value $_gvmduid
+_gvmduid=`sudo gvmd --get-users --verbose | awk '{print $2}'`
+sudo gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value $_gvmduid
 
 
 # Update NVT (network vuln tests)
