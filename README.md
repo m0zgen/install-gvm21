@@ -1,5 +1,7 @@
 # GVM Installer
 
+![cwiccs.org](./docs/images/installer_screen.jpg)
+
 Supported / tested on disro:
 
 * Ubuntu 20+
