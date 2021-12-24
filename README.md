@@ -12,7 +12,10 @@ Script install GVM 21 from scratch:
 * Download NVT and others data
 
 # Create cron update script
-*TODO
+For updating GVM SecInfo database, script generate script:
+```
+/etc/cron.daily/sync_gvm.sh
+```
 
 # Usage
 
