@@ -51,7 +51,7 @@ graphviz bison postgresql postgresql-contrib postgresql-server-dev-all \
 heimdal-dev xmltoman nmap npm nodejs virtualenv gnupg rsync yarnpkg \
 python3-paramiko python3-lxml python3-defusedxml python3-pip python3-psutil \
 python3-setuptools python3-packaging python3-wrapt python3-cffi python3-redis \
-xmlstarlet texlive-fonts-recommended texlive-latex-extra perl-base expect
+xmlstarlet texlive-fonts-recommended texlive-latex-extra perl-base expect net-tools
 
 # Install yarn
 # -------------------------------------------------------------------------------------------\
@@ -290,13 +290,15 @@ cat << EOF > /etc/cron.daily/sync_gvm.sh
 # Creted by GVM installer https://github.com/m0zgen/install-gvm21
 
 function sync_data() {
-    sudo -u gvm greenbone-feed-sync --type $1
+    sudo -u gvm greenbone-feed-sync --type \$1
     sleep 5
 }
 
 sudo -u gvm greenbone-nvt-sync; sleep 10
 sync_data GVMD_DATA; sync_data SCAP; sync_data CERT
 EOF
+
+chmod +x /etc/cron.daily/sync_gvm.sh
 
 # Gen certs
 # -------------------------------------------------------------------------------------------\
