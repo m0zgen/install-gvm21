@@ -134,6 +134,12 @@ check_exist_gvmd() {
                 exit 1
             fi
 
+        elif [[ "$_VER" == 21 ]]; then
+
+            Error "[Info]" "GVM 21 already installed. Exit."
+            Info "[Exit]" "Bye!"
+            exit 1
+
         fi
 
     fi
