@@ -129,9 +129,11 @@ check_exist_gvmd() {
 
         if [[ "$_VER" == 20 ]]; then
             
-            ./upgrade/ubuntu-up-20-21.sh
+            if confirm "Do you want upgrade current GVM 20 to GVM 21 (y/n)?"; then
+                ./upgrade/ubuntu-up-20-21.sh
+                exit 1
+            fi
 
-            exit 1
         fi
 
     fi
