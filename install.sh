@@ -121,6 +121,22 @@ isSELinux() {
 
 }
 
+check_exist_gvmd() {
+    if [[ -f /usr/local/sbin/gvmd ]]; then
+        Info "[Info]" "Existing GVM found. Checking..."
+
+        local _VER=`/usr/local/sbin/gvmd --version | grep -i "greenbone vuln" | awk '{print $4}' | cut -d. -f1`
+
+        if [[ "$_VER" == 20 ]]; then
+            
+            ./upgrade/ubuntu-up-20-21.sh
+
+            exit 1
+        fi
+
+    fi
+}
+
 # General system information
 system_info() {
     checkDistro
@@ -155,6 +171,8 @@ if [[ "$RPM" = "2" ]]; then
         REL=`lsb_release -r | awk '{ print $2 }'`
 
         if [[ "$REL" > 20 ]]; then
+
+            check_exist_gvmd
 
             if confirm "Do you want install GVM (y/n)?"; then
 
